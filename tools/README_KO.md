@@ -1,5 +1,37 @@
 # 프로젝트 파일 정리
 
+## 전체 프로젝트 정리
+
+```bash
+cd ~/soomac_3.0-IRC_ASZ/modifier_patch_repo
+git pull origin main
+python3 tools/organize_project.py
+python3 tools/organize_project.py --apply
+```
+
+기본 대상은 `~/soomac_3.0-IRC_ASZ` 전체입니다. 첫 명령은 종류별 개수만
+표시하며 `--list`를 붙이면 모든 경로를 볼 수 있습니다. `--apply`는 백업,
+`modifier_backup_*`, `__pycache__`, `.pytest_cache`, 이전 버전 사본
+(`.STABLE_80PASS`, `.disabled`, `.before_rollback`, `.ab_current_*`,
+`.failed_modify_min_*`), 프로젝트 최상위 `llm.zip`을 프로젝트 밖의
+`~/soomac_3.0-IRC_ASZ_archive/날짜_시간_고유번호/`로 옮깁니다.
+
+현재 실행 코드, STT 코드와 설정, UI, 주문 기록, 테스트·학습 데이터,
+평가 결과, 모델, 가상환경, `.git`은 유지합니다. 패치 저장소도 계속 업데이트할
+수 있도록 유지합니다. 명시한 패턴에 맞는 사본만 옮기며, 단순히 오래된 파일이나
+다른 버전의 실행 파일이라는 이유로 분류하지 않습니다. 예를 들어
+`qwen_live_ver_2.py`와 `qwen_live_ver_3.py`는 모두 유지합니다.
+
+파일 내용과 기존 폴더 구조는 보관 폴더의 `files/`에 유지하며, 경로 목록은
+`manifest.json`에 기록합니다. 정리 중에는 패치 적용·테스트·파일 편집을 피하세요.
+도구 자체는 앱·vLLM을 종료하지 않습니다. 재생성되는 캐시는 이후 다시 생길 수 있습니다.
+
+복원은 `python3 tools/organize_project.py --restore 보관폴더`로 실행합니다.
+같은 이름의 파일이 현재 위치에 있으면 덮어쓰지 않고 중단합니다.
+프로젝트 위치가 바뀌었으면 `--target 새_프로젝트_경로`를 함께 지정하세요.
+
+## llm 백업만 정리
+
 현재 GitHub 저장소는 전체 앱이 아니라 수정 파일을 배포하는 패치 저장소입니다.
 Ubuntu의 `llm`을 이 저장소로 통째로 치환하지 마세요.
 
