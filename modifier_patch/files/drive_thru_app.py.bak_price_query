@@ -8878,8 +8878,6 @@ def pre_router_burger_set_price_reply(text):
             "얼마",
             "가격",
             "금액",
-            "추가금",
-            "추가비",
         )
     ):
         return None
@@ -9067,38 +9065,9 @@ def all_category_price_query_reply(text):
             "얼마",
             "가격",
             "금액",
-            "추가금",
-            "추가비",
         )
     ):
         return None
-
-    # 세트 업그레이드 추가금은 일반 음료/사이드 단품 가격과 다르다.
-    # 예: "음료 사이즈랑 사이드 변경은 각각 얼마예요?"
-    if (
-        "사이즈" in compact
-        and "사이드" in compact
-        and any(
-            signal in compact
-            for signal in (
-                "변경",
-                "추가금",
-                "추가비",
-                "더내",
-                "얼마",
-                "가격",
-            )
-        )
-    ):
-        return (
-            "세트 음료 사이즈 변경은 스몰 추가금 없음, "
-            f"미디엄 +{DRINK_SIZE_UPCHARGE['medium']:,}원, "
-            f"라지 +{DRINK_SIZE_UPCHARGE['large']:,}원입니다. "
-            "사이드는 감자튀김 그대로면 추가금이 없고, "
-            f"치즈스틱으로 변경하면 +{SET_SIDE_UPCHARGE['cheese_stick']:,}원입니다. "
-            f"세트 음료는 아이스커피 변경 시 +{SET_DRINK_UPCHARGE['iced_coffee']:,}원, "
-            "그 외 음료는 추가금이 없습니다."
-        )
 
     # --------------------------------------------------------
     # 특정 메뉴 하나를 명시했으면 기존 single_info로 보낸다.

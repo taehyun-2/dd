@@ -405,7 +405,7 @@ def test_pending_candidate_cannot_apply_wrong_topping():
     result = app.unified_modifier_flow("베이컨 추가한 거요", {"items": items})
     assert result["kind"] == "reply"
     assert "적용할 수 없습니다" in result["text"] or "찾지 못했습니다" in result["text"]
-    assert app._unified_modifier_pending["candidate_ids"] == [4]
+    assert app._unified_modifier_pending is None
 
 
 def test_single_topping_remove_selects_only_eligible_item():
@@ -415,24 +415,3 @@ def test_single_topping_remove_selects_only_eligible_item():
     assert result["kind"] == "apply"
     assert [item["line_id"] for item in result["items"]] == [4]
     assert result["update"]["actions"][0]["toppings_remove"] == ["patty"]
-
-
-@pytest.mark.parametrize("question", [
-    "음료사이즈랑 사이드 변경은 각각 얼마인데요?",
-    "세트 음료 사이즈와 사이드 변경 추가금 알려주세요",
-])
-def test_set_upgrade_price_query_reports_incremental_fees(question):
-    reply = app.all_category_price_query_reply(question)
-    assert reply is not None
-    assert "미디엄 +300원" in reply
-    assert "라지 +700원" in reply
-    assert "감자튀김 그대로면 추가금이 없고" in reply
-    assert "치즈스틱으로 변경하면 +500원" in reply
-    assert "아이스커피 변경 시 +500원" in reply
-    assert "감자튀김은 2,000원" not in reply
-
-
-def test_standalone_side_price_query_keeps_menu_prices():
-    reply = app.all_category_price_query_reply("사이드 메뉴 각각 가격 알려주세요")
-    assert "감자튀김은 2,000원" in reply
-    assert "치즈스틱은 2,500원" in reply
