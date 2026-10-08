@@ -1,3 +1,41 @@
+# 최신: 사용자 수정본 검토 패키지 (2026-10-08)
+
+사용자가 직접 정리하고 런치 경로를 수정한 최신 두 ZIP을 기준으로 보완했습니다.
+아래 **reviewed** 파일이 최신입니다. 기존 `clean.zip`은 그 이전 정리본으로 남겨두었습니다.
+
+| 파일 | 용도 |
+|---|---|
+| [실제 사용용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_runtime_reviewed.zip) | Ubuntu 사용용. 사용자가 남긴 테스트·학습 데이터 포함, CLOVA 생성 파일 보완. 133개 파일. |
+| [GitHub용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_github_reviewed.zip) | 소스 공유용. 실행 코드 중심, CLOVA 사용 전 생성 스크립트 실행 필요. 56개 파일. |
+
+[상세 검토 결과](PACKAGE_REVIEW_KO.md)를 확인하세요. 각 ZIP 안에도 검토 결과와 파일별 SHA-256 비교표가 들어 있습니다.
+원본 코드·런치·데이터는 모두 보존했고 문서와 누락된 CLOVA 준비 과정만 보완했습니다.
+주문 처리 테스트는 양쪽 각각 270개 통과. 기존 별도 회귀 스크립트의 잡음 입력(`ㅋㅋㅋㅋ`) 차단 실패 1건은 남아 있습니다.
+실제 ROS/GPU/마이크 구동은 별도 확인이 필요합니다.
+
+## Ubuntu 터미널에서 받기
+
+기존에 복제한 저장소에서:
+
+```bash
+cd ~/soomac_3.0-IRC_ASZ/modifier_patch_repo
+git pull origin main
+(cd downloads && sha256sum -c soomac_3.0-IRC_ASZ_runtime_reviewed.zip.sha256 && sha256sum -c soomac_3.0-IRC_ASZ_github_reviewed.zip.sha256)
+mkdir -p ~/soomac_reviewed
+unzip -n downloads/soomac_3.0-IRC_ASZ_runtime_reviewed.zip -d ~/soomac_reviewed
+```
+
+압축을 푼 실제 사용용 경로는 `~/soomac_reviewed/soomac_3.0-IRC_ASZ_runtime`입니다.
+이 명령은 기존 프로젝트를 교체하거나 삭제하지 않습니다. 먼저 별도 폴더에서 확인하고 기존 프로젝트는 백업하세요.
+기존 `~/drive_thru_venv`, 모델 폴더, 개인 `stt/env.sh`는 유지해야 합니다.
+
+기존 저장소 경로가 다르면 위 `cd` 경로만 실제 복제 경로로 바꾸세요.
+GitHub ZIP은 소스 파일 묶음이므로, 저장소 전체의 Code → Download ZIP과 구분하세요.
+
+---
+
+## 아래는 이전 정리본 안내
+
 # 정리된 전체 프로젝트 다운로드
 
 [정리본 ZIP 다운로드](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_clean.zip)
