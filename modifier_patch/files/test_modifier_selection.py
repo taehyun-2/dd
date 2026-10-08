@@ -387,6 +387,8 @@ def test_session_lifecycle_clears_context(method, monkeypatch):
     (["패티 추가해주세요", "치즈버거 하나 치킨버거 하나"], "add_toppings", "patty", [1, 4]),
     (["패티 추가해주세요", "베이컨 추가한 치즈버거에 추가해주세요"], "add_toppings", "patty", [1]),
     (["패티 추가해주세요", "베이컨 추가한거에 추가해주세요"], "add_toppings", "patty", [1]),
+    (["패티 추가해주세요", "치즈", "1번"], "add_toppings", "patty", [1]),
+    (["치즈 추가해주세요", "1번"], "add_toppings", "cheese", [1]),
 ])
 def test_actual_app_loop_skips_router_and_legacy(commands, field, key, ids, monkeypatch):
     from types import SimpleNamespace
@@ -412,6 +414,44 @@ def test_actual_app_loop_skips_router_and_legacy(commands, field, key, ids, monk
         state = worker.snapshot()["state"]
         assert [i["line_id"] for i in state["items"] if key in i[field]] == ids
         assert len(state["items"]) == 5
+
+
+@pytest.mark.parametrize('utterance', [
+    '튀김', '치즈', '감자', '스틱', '튀김 하나 주세요', '치즈 2개 주세요',
+    '감자요', '스틱 추가해주세요',
+])
+@pytest.mark.parametrize('has_order', [False, True])
+def test_incomplete_menu_does_not_reach_router_or_change_order(utterance, has_order, monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    with real_worker(fixture_items() if has_order else []) as worker:
+        before = copy.deepcopy(worker.snapshot()['state'])
+        monkeypatch.setattr(app, 'RuntimeWorker', lambda *a, **k: worker)
+        monkeypatch.setattr(app, 'VehicleSessionController', lambda *a, **k: SimpleNamespace(state=app.AppState.ORDERING))
+        for name in ('RosSTTUDPInput', 'SpeechInputWorker', 'STTSessionController', 'OrderHandoffManager',
+                     'start_customer_ui_server', 'stop_customer_ui_server', 'ui_add_customer_message',
+                     'ui_set_voice_mode', 'ui_set_order_items'):
+            monkeypatch.setattr(app, name, Mock())
+        said = Mock()
+        monkeypatch.setattr(app, 'soomac_say', said)
+        router = Mock(side_effect=AssertionError('Incomplete product name reached Router'))
+        monkeypatch.setattr(app, 'route_customer_utterance', router)
+        turns = iter([utterance, '/quit'])
+        monkeypatch.setattr(app, 'get_customer_input', lambda *a: next(turns))
+        app.main()
+        assert worker.snapshot()['state'] == before
+        router.assert_not_called()
+        said.assert_called_once()
+        assert '메뉴 이름' in said.call_args.args[0]
+
+
+@pytest.mark.parametrize('utterance', [
+    '감자튀김', '감자 튀김 하나 주세요', '치즈스틱', '치즈 스틱 2개 주세요',
+    '치즈버거 하나 주세요', '치즈 추가해주세요', '치즈 빼주세요',
+    '치즈버거에 치즈 추가해주세요', '치즈 알레르기 있어요',
+])
+def test_partial_menu_guard_preserves_complete_names_and_topping_requests(utterance):
+    assert app.pre_router_partial_menu_reply(utterance) is None
 
 
 @pytest.mark.parametrize("text", ["콜라에 베이컨 추가해주세요", "치즈스틱에 치즈 추가해주세요"])

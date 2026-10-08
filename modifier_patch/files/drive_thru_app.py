@@ -168,6 +168,34 @@ def pre_router_allergy_safety_reply(utterance):
     )
 
 
+def pre_router_partial_menu_reply(utterance):
+    """Incomplete product names must not be guessed into order additions."""
+    value = re.sub(r"[\s!?.,~]+", "", str(utterance or "").lower())
+    match = re.fullmatch(
+        r"(?:저기|저|혹시)?(?P<word>튀김|치즈|감자|스틱)"
+        r"(?P<tail>(?:하나|한개|두개|세개|네개|\d+개?|주세요|줘요|줘|"
+        r"주문할게요|주문해주세요|추가해주세요|추가해줘|추가|"
+        r"요|이요|으로|로|을|를|은|는|좀|만)*)",
+        value,
+    )
+    if match is None:
+        return None
+    word = match['word']
+    # An explicit cheese addition is a supported topping request, not a
+    # shorthand cheese-burger or cheese-stick order.
+    if word == '치즈' and '추가' in match['tail']:
+        return None
+    if word == '치즈':
+        return (
+            "치즈버거, 치즈스틱, 치즈 토핑 중 어떤 것을 원하시나요? "
+            "메뉴 이름이나 토핑 추가 요청을 정확히 말씀해주세요."
+        )
+    return (
+        f"'{word}'만으로는 메뉴를 확정할 수 없어요. "
+        "감자튀김이나 치즈스틱처럼 메뉴 이름을 끝까지 말씀해주세요."
+    )
+
+
 def pre_router_store_guidance_reply(utterance):
     """가게 종류와 주문 시작 방법을 묻는 질문에 답한다."""
     compact = re.sub(r"\s+", "", str(utterance or "").lower())
@@ -13761,6 +13789,13 @@ def main():
             "customer",
             text,
         )
+
+        partial_menu_reply = pre_router_partial_menu_reply(text)
+        if partial_menu_reply is not None:
+            if debug_mode:
+                system_message("[PARTIAL MENU GUARD] full product name required")
+            soomac_say(partial_menu_reply)
+            continue
 
         allergy_reply = pre_router_allergy_safety_reply(text)
         if allergy_reply is not None:
