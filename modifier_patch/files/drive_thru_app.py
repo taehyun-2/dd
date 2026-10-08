@@ -13147,6 +13147,27 @@ def unified_modifier_flow(text, state):
 
     if status == "resolved":
         chosen = resolved["items"]
+
+        # pending 후보가 잘못 넓혀졌거나 상태가 바뀌어도
+        # 실제 operation 조건을 만족하는 항목에만 update를 만든다.
+        eligible_ids = {
+            int(item["line_id"])
+            for item in _um_eligible_items(flow, state)
+        }
+        if any(
+            int(item.get("line_id", -1)) not in eligible_ids
+            for item in chosen
+        ):
+            reset_modifier_context()
+            return {
+                "kind": "reply",
+                "text": (
+                    "말씀하신 버거에는 현재 "
+                    f"{flow['label']} 변경을 적용할 수 없습니다. "
+                    "대상을 다시 말씀해주세요."
+                ),
+            }
+
         reset_modifier_context()
         return {"kind": "apply", "flow": flow, "items": chosen,
                 "update": _um_build_update(flow, chosen),

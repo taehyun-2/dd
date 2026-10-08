@@ -38,7 +38,8 @@ def main():
         current = sha(path.read_bytes()) if path.exists() else None
         if current == hashes["patched_sha256"]:
             continue
-        if current != hashes["original_sha256"]:
+        accepted = set(hashes.get("accepted_sha256", []))
+        if current != hashes["original_sha256"] and current not in accepted:
             raise SystemExit(f"원본과 다른 파일이 있어 중단했습니다 (아직 변경 없음): {path}\n현재 파일을 먼저 비교해주세요.")
         changes.append((name, data, path.exists()))
     if not changes:

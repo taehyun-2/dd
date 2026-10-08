@@ -391,3 +391,27 @@ def test_router_fastpath_patty_capability():
     act["target"] = "tomato"
     update, reason = build_router_fastpath(output, "토마토 토핑 추가해주세요", {"items": fixture_items()}, None)
     assert update is None
+
+
+def test_pending_candidate_cannot_apply_wrong_topping():
+    items = fixture_items()
+    items[3]["add_toppings"] = ["patty"]
+    app._unified_modifier_pending = {
+        "operation": "topping_remove",
+        "key": "patty",
+        "label": "패티",
+        "candidate_ids": [1, 4],
+    }
+    result = app.unified_modifier_flow("베이컨 추가한 거요", {"items": items})
+    assert result["kind"] == "reply"
+    assert "적용할 수 없습니다" in result["text"] or "찾지 못했습니다" in result["text"]
+    assert app._unified_modifier_pending is None
+
+
+def test_single_topping_remove_selects_only_eligible_item():
+    items = fixture_items()
+    items[3]["add_toppings"] = ["patty"]
+    result = app.unified_modifier_flow("패티 취소해줘", {"items": items})
+    assert result["kind"] == "apply"
+    assert [item["line_id"] for item in result["items"]] == [4]
+    assert result["update"]["actions"][0]["toppings_remove"] == ["patty"]
