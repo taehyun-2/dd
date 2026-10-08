@@ -1,0 +1,22 @@
+{
+  "drive_thru_app.py": {
+    "original_sha256": "b4f83081fea2a40b8de5aa20b4b0349e25522a8e87283dd9822a3c328767a404",
+    "patched_sha256": "d2ac2c4e663e56979afcfa48fd849939a9578a0e550b018fe4c81310bc18e371"
+  },
+  "order_schema.py": {
+    "original_sha256": "0ae5f13e065fafa50f7c21aa20416c5ed16aeb1fc260c75556ff128f6529bd9d",
+    "patched_sha256": "34af102ad973c6257d0e96ea3605c3a988cbeab0ec6463d01ade791b20770d94"
+  },
+  "router_fastpath.py": {
+    "original_sha256": "883c5988a95f4f795e8cb76901fba5a0d98651100a5b1e43d43dfeb2d9d12568",
+    "patched_sha256": "dd7913f2574732c7e9844b5340335c825064e6921a6a7da96d631522e0475e30"
+  },
+  "modifier_selection.py": {
+    "original_sha256": null,
+    "patched_sha256": "50f5798e412a5bd23e260ccc3c91c6ae8e8cba9df19ef24873312dd97afd3350"
+  },
+  "test_modifier_selection.py": {
+    "original_sha256": null,
+    "patched_sha256": "2ec07d184c483f1c2bbc5ab8777a6457a9ea5fa3fc13d9234e8dc9066a0ec69c"
+  }
+}

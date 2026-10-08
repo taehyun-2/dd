@@ -1,0 +1,58 @@
+# 버거 modifier 수정본
+
+업로드된 최신 `llm.zip`을 기준으로 수정했습니다. 사용자님 Ubuntu의 원본에는 아직 적용되지 않았습니다.
+
+## 변경 파일
+
+- `drive_thru_app.py`: modifier 요청과 특징 답변 구별, 공통 selector 연결, pending 유지/교체/초기화, 구형 modifier rewrite 호출 제거, 번호 표시를 실제 line_id로 일치. 기존 `process_prebuilt()` 적용 경로 재사용.
+- `modifier_selection.py` (신규): 메뉴 그룹 UNION, 그룹 내부 특징 AND, 그룹별 앞 N개 선택, 번호·순번·메뉴·특징 혼합 선택. 잘못된 조건이나 개수가 있으면 부분 적용하지 않음.
+- `order_schema.py`: 주문 수정용 `Exclude.CHEESE` 제거. 이미 반영된 `Topping.PATTY` 유지. 메뉴 정보 조회용 `IngredientCriterion.CHEESE`는 유지.
+- `router_fastpath.py`: 토핑 capability의 기존 tomato 목록을 patty로 정정. 재료 제외용 tomato는 유지.
+- `test_modifier_selection.py` (신규): 224개 targeted test.
+
+Router policy와 프롬프트, 모델, Runtime 상태 적용 구현, 일반 quantity 로직은 변경하지 않았습니다. 구형 helper 정의는 다른 참조를 보존하기 위해 남겨두었지만 메인 루프의 중복 modifier rewrite 호출은 제거했습니다.
+
+## Ubuntu에 적용
+
+압축을 프로젝트 바깥의 별도 폴더에 풉니다. 해당 폴더에서 다음을 실행합니다.
+
+```bash
+python3 apply_patch.py --target ~/soomac_3.0-IRC_ASZ/llm --check
+python3 apply_patch.py --target ~/soomac_3.0-IRC_ASZ/llm
+```
+
+적용기는 업로드 당시 원본 SHA-256을 검사합니다. 로컬 파일이 그 뒤 바뀌었다면 덮어쓰지 않고 중단합니다. 수정할 기존 파일을 `modifier_backup_날짜_시간/`에 모두 백업한 뒤 적용합니다. 재실행은 이미 적용된 파일을 건너뜁니다. 어떤 프로세스도 종료하거나 재시작하지 않으며 Git 명령도 실행하지 않습니다.
+
+앱이 이미 실행 중이면 파일 적용만으로 실행 중 Python 코드가 바뀌지는 않습니다. 앱의 다음 실행부터 수정본이 사용됩니다. **8000번 vLLM은 그대로 두세요.**
+
+## 검증 결과
+
+- 정적 컴파일 및 schema import 확인: 통과.
+- `python -m pytest -xq test_modifier_selection.py`: **224 passed**.
+- 네 operation × 전체 지원 재료 × 번호·메뉴·복수 메뉴·개수·전부·세트 특징 등을 실제 `RuntimeWorker → OrderUpdate.model_validate → OrderStateManager.apply`로 검증.
+- CASE A~F: 실제 `app.main()`에서도 검증. UI·STT 입출력과 초기 세션만 테스트용으로 대체했고, Router 및 구형 rewrite 호출이 0회인지 assertion으로 확인.
+- 패티 +900원, 중복 방지, 없는 토핑/제외의 임의 재지정 방지, 수량 보존, 새 요청 교체, 세션 초기화, 비연속 line_id 검증 포함.
+- 기존 오프라인 회귀 스크립트 10개 중 **9개 통과**. `test_safety_final_v14.py`는 `ㅋㅋㅋㅋ` 입력을 차단해야 한다는 line 163 assertion에서 실패. 업로드 원본에서도 동일하게 재현한 기존 문제이며 수정하지 않았음.
+- 기존 `app_regression_smoke3.json`: **1 PASS / 2 FAIL**. T001/T004는 최초 주문의 Router 요청에서 `127.0.0.1:8000` 연결 거부로 실패. T073은 통과. 이 클라우드에는 사용자님 로컬 vLLM이 연결되지 않았으므로 전체 live regression 완료로 볼 수 없음.
+
+검증 환경: Python 3.12, pydantic 2.13.5, pytest 9.1.1. 결과는 `validation/`에 포함되어 있습니다. `changes.diff`는 변경 검토용이며 적용에 Git이 필요하지 않습니다.
+
+## 로컬에서 남은 테스트
+
+```bash
+cd ~/soomac_3.0-IRC_ASZ/llm
+source ~/drive_thru_venv/bin/activate
+python -m pytest -q test_modifier_selection.py
+
+export SOOMAC_LLM_URL="http://127.0.0.1:8000/v1"
+export SOOMAC_ROUTER_URL="http://127.0.0.1:8000/v1"
+export SOOMAC_ROUTER_MODEL="drive-thru-v14"
+export SOOMAC_ROUTER_THINKING="off"
+export SOOMAC_ROUTER_TELEMETRY=0
+python run_app_regression.py regression_cases/app_regression_smoke3.json 120
+python run_app_regression.py
+```
+
+pytest가 없다면 활성화한 가상환경에서 `python -m pip install pytest`가 필요합니다. `run_app_regression.py`는 실패가 있어도 프로세스 종료 코드가 0일 수 있으므로 출력의 PASS/FAIL 및 생성된 결과 JSON을 확인해야 합니다. 오래된 회귀 기대값에는 tomato 토핑이나 과거 안내 문구가 남아 있을 수 있으며, 성공으로 맞추려고 기존 테스트를 수정하지 않았습니다.
+
+실제 vLLM을 사용한 전체 앱 검증과 Ubuntu 적용은 아직 완료되지 않았습니다.
