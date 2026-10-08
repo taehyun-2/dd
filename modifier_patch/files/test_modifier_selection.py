@@ -114,6 +114,84 @@ SELECTORS = [
 ]
 
 
+@pytest.mark.parametrize("answers,expected", [
+    (["베이컨 추가한 치킨버거에 추가해주세요"], [5]),
+    (["베이컨 추가한거에 추가해주세요", "베이컨 추가한 치킨버거에 추가해주세요"], [5]),
+    (["치즈버거요", "베이컨 추가한 치즈버거에 추가해주세요"], [1]),
+    (["베이컨 추가한거에 추가해주세요", "둘 다요"], [1, 5]),
+])
+def test_logged_patty_followup_preserves_operation_and_feature(answers, expected):
+    items = fixture_items()
+    for item, line_id in zip(items, [1, 2, 7, 5, 6]):
+        item['line_id'] = line_id
+    items[3]['add_toppings'] = ['bacon']
+    state = {'items': items}
+    before = copy.deepcopy(state)
+    assert app.unified_modifier_flow('패티 추가해주세요', state)['kind'] == 'reply'
+    for answer in answers:
+        result = app.unified_modifier_flow(answer, state)
+        assert result is not None, answer
+    assert result['kind'] == 'apply'
+    assert result['flow']['operation'] == 'topping_add'
+    assert result['flow']['key'] == 'patty'
+    assert [item['line_id'] for item in result['items']] == expected
+    assert all(action['toppings_add'] == ['patty'] for action in result['update']['actions'])
+    assert state == before
+
+
+def test_both_bacon_chicken_burgers_still_need_count():
+    items = fixture_items()
+    items[3]['add_toppings'] = ['bacon']
+    items[4]['add_toppings'] = ['bacon']
+    with real_worker(items) as worker:
+        before = copy.deepcopy(worker.snapshot()['state'])
+        assert turn(worker, '패티 추가해주세요')['kind'] == 'reply'
+        assert turn(worker, '베이컨 추가한 치킨버거에 추가해주세요')['kind'] == 'reply'
+        assert worker.snapshot()['state'] == before
+        result = turn(worker, '둘 다요')
+        assert [item['line_id'] for item in result['items']] == [4, 5]
+        assert all('patty' in item['add_toppings'] for item in worker.snapshot()['state']['items'][3:])
+
+
+@pytest.mark.parametrize('utterance,answer,field,expected', [
+    ('패티 추가해주세요', '베이컨 추가한 치즈버거에 추가해주세요', 'add_toppings', ['bacon', 'patty']),
+    ('패티 빼주세요', '베이컨 추가한 치즈버거에서 빼주세요', 'add_toppings', ['bacon']),
+    ('토마토 빼주세요', '베이컨 추가한 치즈버거에서 빼주세요', 'exclude', ['tomato']),
+    ('토마토 다시 넣어주세요', '베이컨 추가한 치즈버거에 다시 넣어주세요', 'exclude', []),
+])
+def test_repeated_followup_action_through_runtime(utterance, answer, field, expected):
+    items = fixture_items()
+    if utterance == '패티 빼주세요':
+        for item in items:
+            item['add_toppings'].append('patty')
+    if utterance == '토마토 다시 넣어주세요':
+        for item in items:
+            item['exclude'] = ['tomato']
+    with real_worker(items) as worker:
+        before = copy.deepcopy(worker.snapshot()['state'])
+        assert turn(worker, utterance)['kind'] == 'reply'
+        result = turn(worker, answer)
+        assert result['kind'] == 'apply'
+        after = worker.snapshot()['state']
+        expected_state = copy.deepcopy(before)
+        expected_state['items'][0][field] = expected
+        assert after == expected_state
+
+
+@pytest.mark.parametrize('utterance', [
+    '치킨버거 추가해주세요',
+    '베이컨 추가한 치킨버거 하나 추가해주세요',
+    '베이컨 추가한 치킨버거 하나 주세요',
+])
+def test_followup_normalization_does_not_swallow_new_orders(utterance):
+    state = {'items': fixture_items()}
+    before = copy.deepcopy(state)
+    assert app.unified_modifier_flow('패티 추가해주세요', state)['kind'] == 'reply'
+    assert app.unified_modifier_flow(utterance, state) is None
+    assert app._unified_modifier_pending is None
+    assert state == before
+
+
 @pytest.mark.parametrize("operation,key,label", OPERATIONS)
 @pytest.mark.parametrize("answers,expected", SELECTORS)
 def test_all_operations_through_real_worker(operation, key, label, answers, expected):
@@ -307,6 +385,8 @@ def test_session_lifecycle_clears_context(method, monkeypatch):
     (["양상추 빼주세요", "1번 4번"], "exclude", "lettuce", [1, 4]),
     (["베이컨 추가해주세요", "치킨버거요", "둘 다요"], "add_toppings", "bacon", [1, 4, 5]),
     (["패티 추가해주세요", "치즈버거 하나 치킨버거 하나"], "add_toppings", "patty", [1, 4]),
+    (["패티 추가해주세요", "베이컨 추가한 치즈버거에 추가해주세요"], "add_toppings", "patty", [1]),
+    (["패티 추가해주세요", "베이컨 추가한거에 추가해주세요"], "add_toppings", "patty", [1]),
 ])
 def test_actual_app_loop_skips_router_and_legacy(commands, field, key, ids, monkeypatch):
     from types import SimpleNamespace

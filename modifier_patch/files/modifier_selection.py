@@ -73,6 +73,37 @@ def detect_request(text, toppings, excludes, menus, sides):
     return requests[0] if requests else None
 
 
+def normalize_target_followup(text, operation, toppings, excludes):
+    """Remove a repeated pending command after an existing-option target.
+
+    Only an explicit locative target (e.g. '베이컨 추가한 버거에') qualifies.
+    Bare menu add orders and newly specified ingredient operations are left
+    to the caller's normal request detection.
+    """
+    value = compact(text)
+    commands = {
+        "topping_add": r"(?:추가(?:해주세요|해줘|해)|넣어(?:주세요|줘)|올려(?:주세요|줘))",
+        "topping_remove": r"(?:빼(?:주세요|줘)|제거(?:해주세요|해줘|해))",
+        "exclude_add": r"(?:빼(?:주세요|줘)|제외(?:해주세요|해줘|해))",
+        "exclude_remove": r"(?:다시넣어(?:주세요|줘)|복구(?:해주세요|해줘|해))",
+    }
+    command = commands.get(operation)
+    if command is None:
+        return text
+    match = re.fullmatch(r"(?P<target>.+(?:에서|에는|에도|에))(?:좀)?" + command + r"요?", value)
+    if match is None:
+        return text
+    target = match['target']
+    for mapping, feature in (
+        (toppings, r"(?:토핑)?(?:추가한|추가된|넣은|넣었던|올린|얹은|토핑있는|토핑들어간)"),
+        (excludes, r"(?:뺀|뺐|빼놓은|제외한|제외된|없는|없이한)"),
+    ):
+        for label in mapping.values():
+            if re.search(re.escape(compact(label)) + r"(?:을|를)?" + feature, target):
+                return target
+    return text
+
+
 def explicit_new_order(text, menus, drinks, sides):
     value = compact(text)
     names = [*menus.values(), *drinks.values(), *sides.values()]

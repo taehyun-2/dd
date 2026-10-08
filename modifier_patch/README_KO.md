@@ -9,7 +9,7 @@
 - `modifier_selection.py` (신규): 메뉴 그룹 UNION, 그룹 내부 특징 AND, 그룹별 앞 N개 선택, 번호·순번·메뉴·특징 혼합 선택. 잘못된 조건이나 개수가 있으면 부분 적용하지 않음.
 - `order_schema.py`: 주문 수정용 `Exclude.CHEESE` 제거. 이미 반영된 `Topping.PATTY` 유지. 메뉴 정보 조회용 `IngredientCriterion.CHEESE`는 유지.
 - `router_fastpath.py`: 토핑 capability의 기존 tomato 목록을 patty로 정정. 재료 제외용 tomato는 유지.
-- `test_modifier_selection.py` (신규): 229개 targeted test. 세트 가격 조회 회귀 테스트 포함.
+- `test_modifier_selection.py` (신규): 243개 targeted test. 세트 가격 조회 회귀 테스트 포함.
 - 세트 업그레이드 가격 안내: 음료 사이즈와 사이드 변경 질문에 단품 가격 대신 증분 요금을 안내합니다.
 
 Router policy와 프롬프트, 모델, Runtime 상태 적용 구현, 일반 quantity 로직은 변경하지 않았습니다. 구형 helper 정의는 다른 참조를 보존하기 위해 남겨두었지만 메인 루프의 중복 modifier rewrite 호출은 제거했습니다.
@@ -22,6 +22,10 @@ Router policy와 프롬프트, 모델, Runtime 상태 적용 구현, 일반 quan
 - `여기 무슨 가게예요?`에는 햄버거 가게라고 답하고, `나 뭐 주문하면 돼?`에는 햄버거·사이드·음료 주문을 안내합니다. 이 질문들은 주문 상태를 바꾸지 않습니다.
 - 버거 종류 없이 속재료를 물으면 먼저 불고기버거·치킨버거·치즈버거·새우버거 중 어떤 메뉴인지 묻습니다. 다음 답변으로 버거명을 받으면 해당 메뉴에 등록된 기본 재료만 설명합니다.
 - 예: `햄버거 속재료 뭐 들어가요?` → 버거 종류를 질문 → `치즈버거요` → 치즈버거 기본 재료 안내.
+
+## 대상 답변 뒤 반복 요청 처리
+
+`패티 추가해주세요` 다음 `베이컨 추가한 치킨버거에 추가해주세요`라고 답하면 베이컨이 이미 들어간 치킨버거를 선택해 패티를 추가합니다. 새 주문으로 오인해 대기 중인 변경 요청을 지우던 문제를 수정했습니다. 후보가 두 개면 개수나 번호를 다시 확인하며, `둘 다`로 두 후보를 선택할 수 있습니다. 새 버거 주문은 기존 주문 경로로 처리합니다.
 
 ## Ubuntu에 적용
 
@@ -39,7 +43,7 @@ python3 apply_patch.py --target ~/soomac_3.0-IRC_ASZ/llm
 ## 검증 결과
 
 - 정적 컴파일 및 schema import 확인: 통과.
-- `python -m pytest -xq test_modifier_selection.py`: **229 passed**.
+- `python -m pytest -xq test_modifier_selection.py`: **243 passed**.
 - 네 operation × 전체 지원 재료 × 번호·메뉴·복수 메뉴·개수·전부·세트 특징 등을 실제 `RuntimeWorker → OrderUpdate.model_validate → OrderStateManager.apply`로 검증.
 - CASE A~F: 실제 `app.main()`에서도 검증. UI·STT 입출력과 초기 세션만 테스트용으로 대체했고, Router 및 구형 rewrite 호출이 0회인지 assertion으로 확인.
 - 패티 +900원, 중복 방지, 없는 토핑/제외의 임의 재지정 방지, 수량 보존, 새 요청 교체, 세션 초기화, 비연속 line_id 검증 포함.

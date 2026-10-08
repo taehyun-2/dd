@@ -15,6 +15,7 @@ from modifier_selection import (
     detect_request as detect_modifier_request,
     resolve_targets as resolve_modifier_targets,
     explicit_new_order as explicit_new_modifier_order,
+    normalize_target_followup as normalize_modifier_target_followup,
 )
 from pathlib import Path
 
@@ -13296,10 +13297,14 @@ def unified_modifier_flow(text, state):
             reply = f"{fresh['label']}에는 버거 토핑·재료 변경을 적용할 수 없습니다."
         return {"kind": "reply", "text": reply}
 
+    selector_text = text
     if fresh is None and _unified_modifier_pending is not None:
+        selector_text = normalize_modifier_target_followup(
+            text, _unified_modifier_pending['operation'], TOPPING_LABELS, EXCLUDE_LABELS,
+        )
         # Explicit new orders/finalization leave modifier selection; bare menu
         # names and counts remain target answers, including '두 개 빼주세요'.
-        if (explicit_new_modifier_order(text, MENU_LABELS, DRINK_LABELS, SIDE_LABELS)
+        if (explicit_new_modifier_order(selector_text, MENU_LABELS, DRINK_LABELS, SIDE_LABELS)
                 or any(token in compact for token in FINALIZATION_KEYWORDS)
                 or compact in {
             "주문완료", "주문완료요", "이상입니다", "이상이에요", "결제할게요",
@@ -13318,7 +13323,7 @@ def unified_modifier_flow(text, state):
         allowed = set(flow["candidate_ids"])
         candidates = [item for item in _um_eligible_items(flow, state)
                       if item["line_id"] in allowed]
-        selector = text
+        selector = selector_text
     else:
         return None
 
