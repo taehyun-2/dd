@@ -1,7 +1,7 @@
 {
   "drive_thru_app.py": {
     "original_sha256": "b4f83081fea2a40b8de5aa20b4b0349e25522a8e87283dd9822a3c328767a404",
-    "patched_sha256": "28e28b3922e5a26612df30e42debd138b8288e271cf9a3d42a043f8a932fbf1",
+    "patched_sha256": "28e28b3922e5a26612df30e42debd138b8288e271cf9a3d42a043f8a932fbf1e",
     "accepted_sha256": ["d2ac2c4e663e56979afcfa48fd849939a9578a0e550b018fe4c81310bc18e371"]
   },
   "order_schema.py": {
