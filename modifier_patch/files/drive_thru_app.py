@@ -103,7 +103,7 @@ from ui_runtime_bridge import (
 
 
 def pre_router_allergy_safety_reply(utterance):
-    """알레르기 안전정보가 없는 메뉴 추천을 차단한다."""
+    """새우·갑각류는 해당 버거를 제외해 추천하고 별도 안전 확인을 안내한다."""
     compact = re.sub(r"\s+", "", str(utterance or "").lower())
     if not any(token in compact for token in ("알레르기", "알러지", "알러르기")):
         return None
@@ -132,12 +132,28 @@ def pre_router_allergy_safety_reply(utterance):
         ("참깨", "참깨"),
         ("생선", "생선"),
     )
-    matched = next(
-        ((source, label) for source, label in allergens if source in compact),
-        None,
-    )
+    mentioned = {
+        label for source, label in allergens
+        if (
+            source in compact if len(source) > 1 else
+            any(source + term in compact for term in ("알레르기", "알러지", "알러르기"))
+        )
+    }
+    if mentioned and mentioned <= {"새우", "갑각류", "게"}:
+        candidates = [
+            MENU_KNOWLEDGE_BURGERS[key]["name"]
+            for key in ("bulgogi_burger", "cheese_burger", "chicken_burger")
+            if "shrimp_patty" not in MENU_KNOWLEDGE_BURGERS[key]["ingredients"]
+        ]
+        if candidates:
+            return (
+                "새우버거를 제외하고 " + ", ".join(candidates) + "를 추천드려요. "
+                "주문 전 원재료와 조리 중 교차접촉 여부는 직원에게 확인해주세요."
+            )
+
+    matched = next((label for _, label in allergens if label in mentioned), None)
     if matched:
-        allergen = matched[1]
+        allergen = matched
         return (
             f"{allergen} 알레르기가 있으시군요. 현재 메뉴별 원재료와 조리 중 "
             "교차접촉 정보를 확인할 수 없어 안전한 메뉴를 추천해 드릴 수 없습니다. "
@@ -149,6 +165,31 @@ def pre_router_allergy_safety_reply(utterance):
         "추천하거나 알레르기 유발 성분이 없다고 안내할 수 없습니다. "
         "주문 전에 직원에게 원재료와 조리 과정을 확인해 주세요."
     )
+
+
+def pre_router_store_guidance_reply(utterance):
+    """가게 종류와 주문 시작 방법을 묻는 질문에 답한다."""
+    compact = re.sub(r"\s+", "", str(utterance or "").lower())
+    if any(token in compact for token in (
+        "무슨가게", "어떤가게", "무슨매장", "어떤매장",
+        "뭐하는가게", "뭐하는곳", "뭐파는곳", "뭐파는가게",
+    )):
+        return "여기는 햄버거 가게예요."
+
+    if (
+        any(token in compact for token in (
+            "뭐주문", "뭘주문", "무엇을주문", "어떤걸주문", "어떤거주문",
+            "뭐시키", "뭘시키", "뭐시켜", "뭘시켜",
+        ))
+        and any(token in compact for token in (
+            "하면", "할까", "할수", "해야", "가능", "시키면", "시킬까", "시켜야",
+        ))
+    ):
+        return (
+            "햄버거, 사이드, 음료를 주문하실 수 있어요. "
+            "원하시는 메뉴를 말씀해주세요."
+        )
+    return None
 
 
 def _is_burger_ingredient_question(utterance):
@@ -9159,6 +9200,7 @@ def all_category_price_query_reply(text):
     # 변경 가격 질문을 음료별 스몰/미디엄/라지 단품 가격으로 오해하지 않는다.
     if (
         "음료" in compact
+        and not ("사이즈" in compact and "사이드" in compact)
         and any(
             signal in compact
             for signal in (
@@ -13721,6 +13763,14 @@ def main():
             if debug_mode:
                 system_message("[ALLERGY SAFETY FASTPATH] verified data unavailable")
             soomac_say(allergy_reply)
+            continue
+
+        store_reply = pre_router_store_guidance_reply(text)
+        if store_reply is not None:
+            pending_burger_ingredient_query = False
+            if debug_mode:
+                system_message("[STORE GUIDANCE FASTPATH]")
+            soomac_say(store_reply)
             continue
 
         # 되물은 버거명을 받아, 등록된 해당 버거 재료만 답한다.
