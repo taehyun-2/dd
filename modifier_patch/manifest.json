@@ -23,5 +23,9 @@
     "original_sha256": null,
     "patched_sha256": "86cedd940317a23a5fa54ab31ed0625ff70911a65156aaef2e9c56cf11eebc7e",
     "accepted_sha256": ["2ec07d184c483f1c2bbc5ab8777a6457a9ea5fa3fc13d9234e8dc9066a0ec69c", "80c0db3c101beacd9bc09b179646a85105607aedc6b5efa983117ae5aa736e4e"]
+  },
+  "menu_knowledge.py": {
+    "original_sha256": "b9b1cc0359f0e39fdf276c89506a6587ff96a53974acf6f7566e4a3ad82b0a2c",
+    "patched_sha256": "e50f98e3a316ef0b756050fb7191fb06393df7a0b361d1fb590a24f58c1dcda7"
   }
 }
