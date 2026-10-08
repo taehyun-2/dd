@@ -5,6 +5,7 @@
 ## 변경 파일
 
 - `drive_thru_app.py`: modifier 요청과 특징 답변 구별, 공통 selector 연결, pending 유지/교체/초기화, 구형 modifier rewrite 호출 제거, 번호 표시를 실제 line_id로 일치. 기존 `process_prebuilt()` 적용 경로 재사용.
+- 세트 음료 변경 가격 질문은 음료별 전체 크기 가격 목록 대신 추가금만 간단히 안내합니다.
 - `modifier_selection.py` (신규): 메뉴 그룹 UNION, 그룹 내부 특징 AND, 그룹별 앞 N개 선택, 번호·순번·메뉴·특징 혼합 선택. 잘못된 조건이나 개수가 있으면 부분 적용하지 않음.
 - `order_schema.py`: 주문 수정용 `Exclude.CHEESE` 제거. 이미 반영된 `Topping.PATTY` 유지. 메뉴 정보 조회용 `IngredientCriterion.CHEESE`는 유지.
 - `router_fastpath.py`: 토핑 capability의 기존 tomato 목록을 patty로 정정. 재료 제외용 tomato는 유지.
@@ -34,6 +35,7 @@ python3 apply_patch.py --target ~/soomac_3.0-IRC_ASZ/llm
 - CASE A~F: 실제 `app.main()`에서도 검증. UI·STT 입출력과 초기 세션만 테스트용으로 대체했고, Router 및 구형 rewrite 호출이 0회인지 assertion으로 확인.
 - 패티 +900원, 중복 방지, 없는 토핑/제외의 임의 재지정 방지, 수량 보존, 새 요청 교체, 세션 초기화, 비연속 line_id 검증 포함.
 - “음료 사이즈랑 사이드 변경은 각각 얼마예요?”는 스몰 +0원, 미디엄 +300원, 라지 +700원, 치즈스틱 변경 +500원 및 아이스커피 변경 +500원을 안내. 일반 사이드 가격 질문은 감자튀김 2,000원·치즈스틱 2,500원을 계속 안내.
+- “음료는 변경 얼마예요?”에는 세트 음료 변경 추가금만 안내: 콜라·제로콜라·스프라이트·환타 추가금 없음, 아이스커피 +500원.
 - 기존 오프라인 회귀 스크립트 10개 중 **9개 통과**. `test_safety_final_v14.py`는 `ㅋㅋㅋㅋ` 입력을 차단해야 한다는 line 163 assertion에서 실패. 업로드 원본에서도 동일하게 재현한 기존 문제이며 수정하지 않았음.
 - 기존 `app_regression_smoke3.json`: **1 PASS / 2 FAIL**. T001/T004는 최초 주문의 Router 요청에서 `127.0.0.1:8000` 연결 거부로 실패. T073은 통과. 이 클라우드에는 사용자님 로컬 vLLM이 연결되지 않았으므로 전체 live regression 완료로 볼 수 없음.
 

@@ -9073,6 +9073,39 @@ def all_category_price_query_reply(text):
     ):
         return None
 
+    # 세트 음료를 어떤 것으로 바꿀 때 붙는 추가금만 간단히 안내한다.
+    # 변경 가격 질문을 음료별 스몰/미디엄/라지 단품 가격으로 오해하지 않는다.
+    if (
+        "음료" in compact
+        and any(
+            signal in compact
+            for signal in (
+                "변경",
+                "바꾸",
+                "바꿔",
+                "추가금",
+                "추가비",
+            )
+        )
+    ):
+        free_drinks = [
+            DRINK_LABELS[key]
+            for key, fee in SET_DRINK_UPCHARGE.items()
+            if fee == 0
+        ]
+        paid_drinks = [
+            f"{DRINK_LABELS[key]} +{fee:,}원"
+            for key, fee in SET_DRINK_UPCHARGE.items()
+            if fee > 0
+        ]
+        return (
+            "세트 음료 변경은 "
+            + ", ".join(free_drinks)
+            + " 추가금 없음, "
+            + ", ".join(paid_drinks)
+            + "입니다."
+        )
+
     # 세트 업그레이드 추가금은 일반 음료/사이드 단품 가격과 다르다.
     # 예: "음료 사이즈랑 사이드 변경은 각각 얼마예요?"
     if (
