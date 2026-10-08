@@ -102,6 +102,88 @@ from ui_runtime_bridge import (
 )
 
 
+def pre_router_allergy_safety_reply(utterance):
+    """알레르기 안전정보가 없는 메뉴 추천을 차단한다."""
+    compact = re.sub(r"\s+", "", str(utterance or "").lower())
+    if not any(token in compact for token in ("알레르기", "알러지", "알러르기")):
+        return None
+
+    allergens = (
+        ("새우", "새우"),
+        ("갑각류", "갑각류"),
+        ("게살", "게"),
+        ("대게", "게"),
+        ("꽃게", "게"),
+        ("게", "게"),
+        ("조개", "조개류"),
+        ("굴", "굴"),
+        ("홍합", "홍합"),
+        ("전복", "전복"),
+        ("랍스터", "갑각류"),
+        ("바닷가재", "갑각류"),
+        ("우유", "우유"),
+        ("땅콩", "땅콩"),
+        ("견과", "견과류"),
+        ("밀", "밀"),
+        ("계란", "계란"),
+        ("달걀", "계란"),
+        ("대두", "대두"),
+        ("콩", "콩"),
+        ("참깨", "참깨"),
+        ("생선", "생선"),
+    )
+    matched = next(
+        ((source, label) for source, label in allergens if source in compact),
+        None,
+    )
+    if matched:
+        allergen = matched[1]
+        return (
+            f"{allergen} 알레르기가 있으시군요. 현재 메뉴별 원재료와 조리 중 "
+            "교차접촉 정보를 확인할 수 없어 안전한 메뉴를 추천해 드릴 수 없습니다. "
+            "주문 전에 직원에게 원재료와 조리 과정을 확인해 주세요."
+        )
+
+    return (
+        "현재 메뉴별 알레르기와 조리 중 교차접촉 정보를 확인할 수 없어 안전한 메뉴를 "
+        "추천하거나 알레르기 유발 성분이 없다고 안내할 수 없습니다. "
+        "주문 전에 직원에게 원재료와 조리 과정을 확인해 주세요."
+    )
+
+
+def _is_burger_ingredient_question(utterance):
+    compact = re.sub(r"\s+", "", str(utterance or "").lower())
+    asks_about_ingredients = any(
+        token in compact
+        for token in (
+            "속재료",
+            "재료",
+            "뭐들어",
+            "뭐들어가",
+            "뭐가들어",
+            "뭐가들어가",
+            "뭐들었",
+            "무엇들어",
+            "무엇들어가",
+            "무엇이들어",
+            "무엇이들어가",
+            "구성",
+        )
+    )
+    mentions_burger = any(
+        token in compact
+        for token in (
+            "햄버거",
+            "버거",
+            "불고기",
+            "치킨",
+            "치즈",
+            "새우",
+        )
+    )
+    return asks_about_ingredients and mentions_burger
+
+
 def pre_router_unknown_menu_reply(utterance):
     """
     현재 시연 메뉴에 없는 외부/미지원 메뉴를
@@ -13309,6 +13391,9 @@ def main():
     # 다음 고객 발화가 취소 대상을 지정하는 상태.
     pending_cancel_target = False
 
+    # 버거 재료 질문에 메뉴명을 되물은 뒤 한 번의 답변을 받는다.
+    pending_burger_ingredient_query = False
+
 
     header()
 
@@ -13451,6 +13536,7 @@ def main():
 
             pending_mobile_order_id = None
             pending_cancel_target = False
+            pending_burger_ingredient_query = False
 
 
             system_message(
@@ -13485,6 +13571,7 @@ def main():
             last_handoff = None
             pending_mobile_order_id = None
             pending_cancel_target = False
+            pending_burger_ingredient_query = False
             reset_router_history()
 
             system_message(
@@ -13627,6 +13714,52 @@ def main():
             "customer",
             text,
         )
+
+        allergy_reply = pre_router_allergy_safety_reply(text)
+        if allergy_reply is not None:
+            pending_burger_ingredient_query = False
+            if debug_mode:
+                system_message("[ALLERGY SAFETY FASTPATH] verified data unavailable")
+            soomac_say(allergy_reply)
+            continue
+
+        # 되물은 버거명을 받아, 등록된 해당 버거 재료만 답한다.
+        if pending_burger_ingredient_query:
+            pending_burger_ingredient_query = False
+            followup_burger = _explicit_burger_from_utterance(text)
+            if followup_burger is not None:
+                soomac_say(
+                    answer_menu_query(
+                        family="info_query",
+                        subtype="ingredient",
+                        target=followup_burger,
+                        utterance="기본 재료",
+                        burger_prices=BURGER_BASE_PRICE,
+                    )
+                )
+                continue
+
+        # 버거 종류가 빠진 재료 질문은 먼저 종류를 확인한다.
+        if _is_burger_ingredient_question(text):
+            requested_burger = _explicit_burger_from_utterance(text)
+            if requested_burger is None:
+                pending_burger_ingredient_query = True
+                soomac_say(
+                    "어떤 버거의 재료가 궁금하세요? "
+                    "불고기버거, 치킨버거, 치즈버거, 새우버거 중 말씀해주세요."
+                )
+                continue
+
+            soomac_say(
+                answer_menu_query(
+                    family="info_query",
+                    subtype="ingredient",
+                    target=requested_burger,
+                    utterance="기본 재료",
+                    burger_prices=BURGER_BASE_PRICE,
+                )
+            )
+            continue
 
         ui_set_voice_mode(
             "processing"
