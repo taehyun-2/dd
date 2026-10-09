@@ -1,4 +1,28 @@
-# 최신: 주문 완료 ROS PUB 추가 (2026-10-09)
+# 최신: 취소 후 메뉴 항목 연속 번호 (2026-10-09)
+
+- [실사용용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_runtime_renumbered.zip)
+- [GitHub용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_github_renumbered.zip)
+- [번호 정리 적용 안내](LINE_NUMBERING_KO.md)
+
+`1,2,3,4,5`에서 3번 취소 후 `1,2,3,4`로 정리됩니다. 다음 명령도 새 번호 기준입니다.
+기존 PUB 기능을 포함합니다. 고객 접수 누적번호와 맥오더 예약번호는 바꾸지 않습니다.
+직전 PUB 버전 대비 실행 코드 수정은 `llm/order_runtime_final.py` 한 파일입니다.
+실사용용 테스트 322개, GitHub용 코드 외부 테스트 302개 및 기존 오프라인 스크립트 10개 통과.
+
+```bash
+cd ~/soomac_3.0-IRC_ASZ/modifier_patch_repo
+git pull origin main
+(cd downloads && sha256sum -c soomac_3.0-IRC_ASZ_runtime_renumbered.zip.sha256 && sha256sum -c soomac_3.0-IRC_ASZ_github_renumbered.zip.sha256)
+mkdir -p ~/soomac_renumbered
+unzip -n downloads/soomac_3.0-IRC_ASZ_runtime_renumbered.zip -d ~/soomac_renumbered
+unzip -n downloads/soomac_3.0-IRC_ASZ_github_renumbered.zip -d ~/soomac_renumbered
+```
+
+기존 파일과 `runtime_data/`를 백업·유지하고 적용하세요. 앱을 다음 실행할 때 반영됩니다.
+
+---
+
+# 이전: 주문 완료 ROS PUB 추가 (2026-10-09)
 
 - [실사용용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_runtime_order_pub.zip)
 - [팀 GitHub 업로드용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_github_order_pub.zip)
