@@ -1,4 +1,33 @@
-# 최신: 사용자 수정본 검토 패키지 (2026-10-08)
+# 최신: 주문 완료 ROS PUB 추가 (2026-10-09)
+
+- [실사용용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_runtime_order_pub.zip)
+- [팀 GitHub 업로드용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_github_order_pub.zip)
+- [연결·실행 안내](ROS_ORDER_PUB_KO.md)
+
+주문 확정 시 메뉴/수량 요약과 총액을 `/order` (`std_msgs/msg/String`)로 발행합니다.
+실사용용·GitHub용 각각 293개 오프라인 테스트 통과. 실제 ROS DDS/로봇은 현장에서 확인해야 합니다.
+사용자가 마지막으로 올린 ZIP 두 개에 동일한 실행 코드를 반영했고 GitHub용에는 테스트를 넣지 않았습니다.
+팀 저장소에는 직접 변경을 올리지 않았습니다. 메인 노드 맥오더 발화 수정 1줄 패치를 ZIP에 함께 넣었습니다.
+
+기존 복제 저장소에서 받기:
+
+```bash
+cd ~/soomac_3.0-IRC_ASZ/modifier_patch_repo
+git pull origin main
+(cd downloads && sha256sum -c soomac_3.0-IRC_ASZ_runtime_order_pub.zip.sha256 && sha256sum -c soomac_3.0-IRC_ASZ_github_order_pub.zip.sha256)
+mkdir -p ~/soomac_order_pub
+unzip -n downloads/soomac_3.0-IRC_ASZ_runtime_order_pub.zip -d ~/soomac_order_pub
+unzip -n downloads/soomac_3.0-IRC_ASZ_github_order_pub.zip -d ~/soomac_order_pub
+```
+
+기존 폴더는 보존됩니다. 실제 사용 경로는 `~/soomac_order_pub/soomac_3.0-IRC_ASZ_runtime`입니다.
+앱과 ROS IO 런치는 반드시 이 새 사본을 함께 사용해야 합니다.
+기존 주문 순번을 이어가려면 이전 `llm/runtime_data/handoffs/`도 보관·이전하세요.
+IO 런치를 다시 실행해야 새 publisher가 기동됩니다. vLLM은 재시작할 필요 없습니다.
+
+---
+
+# 이전: 사용자 수정본 검토 패키지 (2026-10-08)
 
 사용자가 직접 정리하고 런치 경로를 수정한 최신 두 ZIP을 기준으로 보완했습니다.
 아래 **reviewed** 파일이 최신입니다. 기존 `clean.zip`은 그 이전 정리본으로 남겨두었습니다.
