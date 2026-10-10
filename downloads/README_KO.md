@@ -1,4 +1,29 @@
-# 최신: 취소 후 메뉴 항목 연속 번호 (2026-10-09)
+# 최신: 직원 화면 최근 주문 4칸 (2026-10-10)
+
+- [실사용용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_runtime_staff_board.zip)
+- [GitHub용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_github_staff_board.zip)
+- [화면 미리보기](staff-board-preview.png) / [적용 안내](STAFF_BOARD_KO.md)
+- [첫 원본부터 전체 변경 파일 목록](SOURCE_CHANGE_AUDIT_KO.md) / [전체 파일 해시·수정·추가·제외 CSV](SOURCE_CHANGE_AUDIT.csv)
+
+확정된 최근 주문 4건을 가로로 표시합니다. 5번째 주문이 들어오면 1번 대신 2·3·4·5가 보입니다.
+기존 PUB 기능과 메뉴 취소 후 번호 정리를 모두 포함합니다. 팀 저장소에는 직접 푸시하지 않았습니다.
+실사용용 테스트 330개, GitHub용 외부 테스트 310개 및 실제 Chromium 화면 검증을 통과했습니다.
+
+```bash
+cd ~/soomac_3.0-IRC_ASZ/modifier_patch_repo
+git pull --ff-only origin main
+(cd downloads && sha256sum -c soomac_3.0-IRC_ASZ_runtime_staff_board.zip.sha256 && sha256sum -c soomac_3.0-IRC_ASZ_github_staff_board.zip.sha256)
+mkdir -p ~/soomac_staff_board
+unzip -n downloads/soomac_3.0-IRC_ASZ_runtime_staff_board.zip -d ~/soomac_staff_board
+unzip -n downloads/soomac_3.0-IRC_ASZ_github_staff_board.zip -d ~/soomac_staff_board
+```
+
+기존 파일·이력은 그대로 보존됩니다. 기존 폴더에 적용할 때는 실행 코드 4개를 함께 반영해야 합니다.
+`STAFF_BOARD_KO.md`를 참고하고 `llm/runtime_data/handoffs/`를 유지하세요. 앱 재실행 후 Ctrl+Shift+R로 화면을 새로고침하세요.
+
+---
+
+# 이전: 취소 후 메뉴 항목 연속 번호 (2026-10-09)
 
 - [실사용용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_runtime_renumbered.zip)
 - [GitHub용 ZIP](https://github.com/taehyun-2/dd/raw/refs/heads/main/downloads/soomac_3.0-IRC_ASZ_github_renumbered.zip)
